@@ -1,73 +1,133 @@
+"use client";
+
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-
+import { useState } from "react";
+import {
+  Bell,
+  Plus,
+  FileText,
+  Calendar,
+  BarChart3,
+  Settings,
+  Sparkles,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { BRAND, COLORS, GRADIENTS } from "../constants/brand";
+const sidebarItems = [
+  { id: "create", label: "Create Content", icon: Plus, href: "/dashboard" },
+  { id: "posts", label: "My Posts", icon: FileText, href: "/dashboard/posts" },
+  {
+    id: "schedule",
+    label: "Schedule",
+    icon: Calendar,
+    href: "/dashboard/schedule",
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    href: "/dashboard/analytics",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings,
+    href: "/dashboard/settings",
+  },
+];
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [currentPath, setCurrentPath] = useState("/dashboard");
+
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <nav className="bg-white/80 backdrop-blur-sm border-b fixed w-full z-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b fixed w-full z-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
-            <div className="flex items-center gap-8">
+            <div className="flex items-center space-x-4">
               <Link href="/dashboard" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                  <span className="text-white font-semibold text-xl">S</span>
+                <div
+                  className={`w-8 h-8 bg-gradient-to-r ${GRADIENTS.primary} rounded-lg flex items-center justify-center`}
+                >
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-xl font-semibold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent">
-                  SaaS Auto Poster
-                </h1>
+                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-400 bg-clip-text text-transparent">
+                  {BRAND.name}
+                </span>
               </Link>
-              <div className="hidden md:flex items-center gap-6">
-                <Link
-                  href="/dashboard"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/posts"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
-                >
-                  Posts
-                </Link>
-                <Link
-                  href="/dashboard/analytics"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
-                >
-                  Analytics
-                </Link>
-              </div>
+              <Badge
+                className={`${COLORS.success.light} ${COLORS.success.dark}`}
+              >
+                ✓ LinkedIn Connected
+              </Badge>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="bg-gray-100/80 backdrop-blur-sm p-1.5 rounded-lg ring-1 ring-gray-200/50">
-                <UserButton
-                  afterSwitchSessionUrl="/sign-in"
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-8 h-8",
-                    },
-                  }}
-                />
-              </div>
+
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm">
+                <Bell className="w-4 h-4" />
+              </Button>
+              <UserButton />
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
-      <main className="pt-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white/80 backdrop-blur-sm shadow-sm rounded-xl ring-1 ring-gray-100 p-6">
-            {children}
+      <div className="flex pt-16">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white/80 backdrop-blur-sm border-r min-h-screen p-6 fixed">
+          <nav className="space-y-2">
+            {sidebarItems.map((item) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                  currentPath === item.href
+                    ? `${COLORS.accent.blue.light} ${COLORS.accent.blue.dark} border ${COLORS.accent.blue.medium}`
+                    : `${COLORS.text.secondary} hover:${COLORS.secondary.light}`
+                }`}
+                onClick={() => setCurrentPath(item.href)}
+              >
+                <item.icon className="w-5 h-5" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          {/* Quick Stats */}
+          <div className="mt-8 space-y-4">
+            <h3 className="text-sm font-medium text-gray-900">This Month</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Posts Created</span>
+                <span className="font-medium">24</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Engagement Rate</span>
+                <span className="font-medium text-green-600">8.4%</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Scheduled</span>
+                <span className="font-medium">12</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </main>
+        </aside>
 
-      <footer className="mt-auto py-4 text-center text-sm text-gray-500">
-        © {new Date().getFullYear()} SaaS Auto Poster. All rights reserved.
-      </footer>
+        {/* Main Content */}
+        <main className="flex-1 ml-64">
+          <div className="mx-auto max-w-7xl p-8">
+            <div className="bg-white/80 backdrop-blur-sm shadow-sm rounded-xl ring-1 ring-gray-100 p-6">
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

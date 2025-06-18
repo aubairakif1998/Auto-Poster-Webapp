@@ -70,7 +70,6 @@ export const posts = pgTable("posts", {
     () => new Date()
   ),
 });
-
 export const scheduledPosts = pgTable("scheduled_posts", {
   id: text("id").primaryKey(),
   postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }),
