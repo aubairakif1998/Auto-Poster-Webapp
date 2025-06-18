@@ -1,8 +1,7 @@
 "use client";
-
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   Plus,
@@ -11,10 +10,14 @@ import {
   BarChart3,
   Settings,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BRAND, COLORS, GRADIENTS } from "../constants/brand";
+import { useUser } from "../hooks/useUser";
+import { usePathname } from "next/navigation";
+
 const sidebarItems = [
   { id: "create", label: "Create Content", icon: Plus, href: "/dashboard" },
   { id: "posts", label: "My Posts", icon: FileText, href: "/dashboard/posts" },
@@ -37,12 +40,32 @@ const sidebarItems = [
     href: "/dashboard/settings",
   },
 ];
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [currentPath, setCurrentPath] = useState("/dashboard");
+  const { user, isLoading, error } = useUser();
+
+  useEffect(() => {
+    if (pathname) {
+      setCurrentPath(pathname);
+    }
+  }, [pathname]);
+
+  // Show loading state while fetching user data
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  // Redirect to user-not-found page if user data couldn't be loaded
+  if (error || !user) {
+    window.location.href = "/user-not-found";
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -61,18 +84,25 @@ export default function DashboardLayout({
                   {BRAND.name}
                 </span>
               </Link>
-              <Badge
-                className={`${COLORS.success.light} ${COLORS.success.dark}`}
-              >
-                ✓ LinkedIn Connected
-              </Badge>
+              {isLoading ? (
+                <Badge variant="outline" className="animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </Badge>
+              ) : user ? (
+                <Badge
+                  className={`${COLORS.success.light} ${COLORS.success.dark}`}
+                >
+                  ✓ LinkedIn Connected
+                </Badge>
+              ) : null}
             </div>
 
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm">
                 <Bell className="w-4 h-4" />
               </Button>
-              <UserButton />
+              <UserButton afterSignOutUrl="/sign-in" />
             </div>
           </div>
         </div>
