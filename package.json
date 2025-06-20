@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.44.2",
     "lucide-react": "^0.517.0",
+    "nanoid": "^5.1.5",
     "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -19,25 +19,25 @@ import { useUser } from "../hooks/useUser";
 import { usePathname } from "next/navigation";
 
 const sidebarItems = [
-  { id: "create", label: "Create Content", icon: Plus, href: "/dashboard" },
-  { id: "posts", label: "My Posts", icon: FileText, href: "/dashboard/posts" },
+  { id: "create", label: "Create Content", icon: Plus, href: "/" },
+  { id: "posts", label: "My Posts", icon: FileText, href: "/posts" },
   {
     id: "schedule",
     label: "Schedule",
     icon: Calendar,
-    href: "/dashboard/schedule",
+    href: "/schedule",
   },
   {
     id: "analytics",
     label: "Analytics",
     icon: BarChart3,
-    href: "/dashboard/analytics",
+    href: "/analytics",
   },
   {
     id: "settings",
     label: "Settings",
     icon: Settings,
-    href: "/dashboard/settings",
+    href: "/settings",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [currentPath, setCurrentPath] = useState("/dashboard");
+  const [currentPath, setCurrentPath] = useState("/");
   const { user, isLoading, error } = useUser();
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function DashboardLayout({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2">
                 <div
                   className={`w-8 h-8 bg-gradient-to-r ${GRADIENTS.primary} rounded-lg flex items-center justify-center`}
                 >

@@ -17,7 +17,7 @@ export function Sidebar({ items, currentPath }: SidebarProps) {
     <aside className="w-64 bg-white border-r h-screen p-6">
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-6">
-          <Link href="/dashboard" className="text-xl font-bold">
+          <Link href="/" className="text-xl font-bold">
             Dashboard
           </Link>
           <UserButton afterSignOutUrl="/sign-in" />

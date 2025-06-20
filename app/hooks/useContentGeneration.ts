@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useGeneratePost } from "./useGeneratePost";
 import { useUser } from "./useUser";
-import { formatGeneratedContent } from "@/app/utils/content-generation";
 
 export type GenerationStep =
   | "input"
@@ -43,16 +41,10 @@ export function useContentGeneration(): ContentGenerationState &
   const [selectedTone, setSelectedTone] = useState("thought_leader");
   const [isSimulating, setIsSimulating] = useState(false);
 
-  const {
-    generatePost,
-    isLoading: isApiLoading,
-    error: apiError,
-    resetError: resetApiError,
-  } = useGeneratePost();
   const { user } = useUser();
 
   // Combined loading state: either simulating steps or API is loading
-  const isLoading = isSimulating || isApiLoading;
+  const isLoading = isSimulating;
 
   const simulateGenerationSteps = async () => {
     setIsSimulating(true);
@@ -75,30 +67,35 @@ export function useContentGeneration(): ContentGenerationState &
 
     setProgress(0);
     setError(null);
-    resetApiError();
 
     try {
       // Simulate AI generation steps
       await simulateGenerationSteps();
 
       // Make API call to generate content with real user ID and specific details
-      const response = await generatePost({
-        topic: topic,
-        tone: selectedTone,
-        specific_details: bulletPoints,
-        user_id: user.id,
+      const response = await fetch("/api/generate-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: topic,
+          tone: selectedTone,
+          specific_details: bulletPoints,
+        }),
       });
 
-      // Check if API call was successful
-      if (!response) {
-        // Error is already set in the useGeneratePost hook
-        setGenerationStep("error");
-        setProgress(0);
-        return;
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Failed to generate content");
       }
 
+      const data = await response.json();
+
       // Format the response
-      const formattedContent = formatGeneratedContent(response);
+      const formattedContent = data.post.content;
       setGeneratedContent(formattedContent);
 
       // Set to complete step
@@ -120,7 +117,6 @@ export function useContentGeneration(): ContentGenerationState &
 
   const retryGeneration = async () => {
     setError(null);
-    resetApiError();
     await handleGenerate();
   };
 
@@ -131,7 +127,6 @@ export function useContentGeneration(): ContentGenerationState &
     setTopic("");
     setBulletPoints("");
     setError(null);
-    resetApiError();
   };
 
   return {
@@ -141,7 +136,7 @@ export function useContentGeneration(): ContentGenerationState &
     bulletPoints,
     generatedContent,
     progress,
-    error: error || apiError, // Use local error or API error
+    error,
     selectedTone,
     isLoading,
 

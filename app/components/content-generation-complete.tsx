@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Share,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -21,7 +22,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/app/hooks/useUser";
 import { useState, useEffect } from "react";
-
 interface ContentGenerationCompleteProps {
   generatedContent: string;
   setGeneratedContent: (content: string) => void;
@@ -29,6 +29,9 @@ interface ContentGenerationCompleteProps {
   onSchedulePost: () => void;
   onRegenerate: () => void;
   onReset: () => void;
+  onSave?: () => void;
+  hasUnsavedChanges?: boolean;
+  isSaving?: boolean;
 }
 
 // Function to detect URLs in text
@@ -45,6 +48,12 @@ const getDomainFromUrl = (url: string): string => {
   } catch {
     return url;
   }
+};
+
+// Function to extract hashtags from content
+const extractHashtags = (content: string): string[] => {
+  const hashtagRegex = /#\w+/g;
+  return content.match(hashtagRegex) || [];
 };
 
 // Function to format content with link previews
@@ -120,6 +129,9 @@ export function ContentGenerationComplete({
   onSchedulePost,
   onRegenerate,
   onReset,
+  onSave,
+  hasUnsavedChanges,
+  isSaving,
 }: ContentGenerationCompleteProps) {
   const { user } = useUser();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -164,6 +176,9 @@ export function ContentGenerationComplete({
 
   // Format content and extract links
   const { text, links } = formatContentWithLinks(generatedContent);
+
+  // Extract hashtags from the content
+  const hashtags = extractHashtags(generatedContent);
 
   return (
     <div className="space-y-6">
@@ -232,6 +247,22 @@ export function ContentGenerationComplete({
                   {formatNumberedBullets(text)}
                 </div>
 
+                {/* Hashtags */}
+                {hashtags.length > 0 && (
+                  <div className="mb-4">
+                    <div className="text-sm text-blue-600 space-x-2">
+                      {hashtags.map((hashtag, index) => (
+                        <span
+                          key={index}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {hashtag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Link Preview Banner */}
                 {links.length > 0 && (
                   <div className="mb-4">
@@ -279,18 +310,43 @@ export function ContentGenerationComplete({
           </div>
 
           <div className="mt-6 flex items-center space-x-4">
+            {onSave && hasUnsavedChanges && (
+              <Button
+                variant="outline"
+                onClick={onSave}
+                disabled={isSaving}
+                className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            )}
             <Button
               className="bg-blue-600 hover:bg-blue-700"
               onClick={onPostNow}
+              disabled={isSaving}
             >
               <Send className="w-4 h-4 mr-2" />
               Post Now
             </Button>
-            <Button variant="outline" onClick={onSchedulePost}>
+            <Button
+              variant="outline"
+              onClick={onSchedulePost}
+              disabled={isSaving}
+            >
               <Clock className="w-4 h-4 mr-2" />
               Schedule Post
             </Button>
-            <Button variant="ghost" onClick={onReset}>
+            <Button variant="ghost" onClick={onReset} disabled={isSaving}>
               Create New Post
             </Button>
           </div>
