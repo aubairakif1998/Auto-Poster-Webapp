@@ -22,6 +22,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/app/hooks/useUser";
 import { useState, useEffect } from "react";
+import { ScheduleTimePicker } from "./schedule-time-picker";
+
 interface ContentGenerationCompleteProps {
   generatedContent: string;
   setGeneratedContent: (content: string) => void;
@@ -32,6 +34,9 @@ interface ContentGenerationCompleteProps {
   onSave?: () => void;
   hasUnsavedChanges?: boolean;
   isSaving?: boolean;
+  postId?: string;
+  isScheduled?: boolean;
+  postStatus?: string;
 }
 
 // Function to detect URLs in text
@@ -132,9 +137,14 @@ export function ContentGenerationComplete({
   onSave,
   hasUnsavedChanges,
   isSaving,
+  postId,
+  isScheduled = false,
+  postStatus,
 }: ContentGenerationCompleteProps) {
   const { user } = useUser();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
 
   // Update time every minute
   useEffect(() => {
@@ -179,6 +189,215 @@ export function ContentGenerationComplete({
 
   // Extract hashtags from the content
   const hashtags = extractHashtags(generatedContent);
+
+  // Handle scheduling with API
+  const handleSchedulePost = async (customTime?: string) => {
+    if (!postId) {
+      onSchedulePost();
+      return;
+    }
+
+    setIsScheduling(true);
+    setShowSchedulePicker(false);
+
+    try {
+      const response = await fetch("/api/posts/schedule", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          postId,
+          customTime,
+        }),
+      });
+
+      if (response.ok) {
+        // Redirect to posts page after successful scheduling
+        window.location.href = "/posts";
+      } else {
+        throw new Error("Failed to schedule post");
+      }
+    } catch (error) {
+      console.error("Error scheduling post:", error);
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handleScheduleClick = () => {
+    if (postId) {
+      setShowSchedulePicker(true);
+    } else {
+      onSchedulePost();
+    }
+  };
+
+  const handleScheduleCancel = () => {
+    setShowSchedulePicker(false);
+  };
+
+  // Show schedule picker if needed
+  if (showSchedulePicker) {
+    return (
+      <div className="flex justify-center">
+        <ScheduleTimePicker
+          onSchedule={handleSchedulePost}
+          onCancel={handleScheduleCancel}
+          isLoading={isScheduling}
+          isRescheduling={isScheduled}
+        />
+      </div>
+    );
+  }
+
+  // If post is published, show published status instead of actions
+  if (postStatus === "published") {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span>Post Published Successfully!</span>
+            </CardTitle>
+            <CardDescription>
+              This post has been published to LinkedIn and cannot be modified
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Published Content
+                </label>
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <div className="text-sm whitespace-pre-wrap">
+                    {generatedContent}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  LinkedIn Preview
+                </label>
+                <div className="border rounded-lg bg-white p-4">
+                  <div className="flex items-start space-x-3 mb-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user?.image || undefined} />
+                      <AvatarFallback>
+                        {getUserInitials(user?.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium text-sm">
+                        {getUserDisplayName()}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {getRelativeTime()} • 🌐
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-sm mb-4">
+                    {formatNumberedBullets(text)}
+                  </div>
+
+                  {/* Hashtags */}
+                  {hashtags.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-sm text-blue-600 space-x-2">
+                        {hashtags.map((hashtag, index) => (
+                          <span
+                            key={index}
+                            className="hover:underline cursor-pointer"
+                          >
+                            {hashtag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Link Preview Banner */}
+                  {links.length > 0 && (
+                    <div className="mb-4">
+                      {links.map((link, index) => (
+                        <div
+                          key={index}
+                          className="border rounded-lg overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                        >
+                          <div className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-900 truncate">
+                                  {getDomainFromUrl(link)}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">
+                                  {link}
+                                </div>
+                              </div>
+                              <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <span className="flex items-center space-x-1">
+                        <ThumbsUp className="w-3 h-3" />
+                        <span>Like</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <MessageCircle className="w-3 h-3" />
+                        <span>Comment</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <Share className="w-3 h-3" />
+                        <span>Share</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-600 mr-3" />
+                  <div>
+                    <h4 className="text-sm font-medium text-green-800">
+                      Successfully Published
+                    </h4>
+                    <p className="text-sm text-green-700 mt-1">
+                      Your post is now live on LinkedIn and cannot be modified.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm text-gray-600">
+                  <strong>Published posts cannot be:</strong>
+                </p>
+                <ul className="text-sm text-gray-600 mt-2 space-y-1">
+                  <li>• Edited or modified</li>
+                  <li>• Rescheduled</li>
+                  <li>• Reposted</li>
+                  <li>• Regenerated</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -340,11 +559,20 @@ export function ContentGenerationComplete({
             </Button>
             <Button
               variant="outline"
-              onClick={onSchedulePost}
-              disabled={isSaving}
+              onClick={handleScheduleClick}
+              disabled={isSaving || isScheduling}
             >
-              <Clock className="w-4 h-4 mr-2" />
-              Schedule Post
+              {isScheduling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Scheduling...
+                </>
+              ) : (
+                <>
+                  <Clock className="w-4 h-4 mr-2" />
+                  Schedule Post
+                </>
+              )}
             </Button>
             <Button variant="ghost" onClick={onReset} disabled={isSaving}>
               Create New Post

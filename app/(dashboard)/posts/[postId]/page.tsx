@@ -4,7 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { PostPreview } from "@/app/components/post-preview";
 import { PostActions } from "@/app/components/post-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Clock } from "lucide-react";
+import { formatRelativeTime, getUserTimezone } from "@/app/lib/timezone";
 
 interface Post {
   id: string;
@@ -14,6 +15,9 @@ interface Post {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  publishedAt?: Date | null;
+  scheduleTime?: string | null;
+  isPublished?: boolean | null;
 }
 
 export default function PostViewPage() {
@@ -22,29 +26,51 @@ export default function PostViewPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [userTimezone] = useState(() => getUserTimezone());
   const postId = params.postId as string;
 
-  useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const response = await fetch(`/api/posts/${postId}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch post");
-        }
-        const data = await response.json();
-        setPost(data.post);
-      } catch (err) {
-        setError("Failed to load post");
-        console.error("Error fetching post:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const formatPublishedDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
+  useEffect(() => {
     if (postId) {
       fetchPost();
     }
   }, [postId]);
+
+  const fetchPost = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/posts/${postId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch post");
+      }
+
+      const data = await response.json();
+      setPost(data.post);
+
+      // Check if post is scheduled
+      if (data.post.status === "scheduled") {
+        setIsScheduled(true);
+      }
+    } catch (err) {
+      setError("Failed to load post");
+      console.error("Error fetching post:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleEditPost = () => {
     router.push(`/posts/${postId}/edit`);
@@ -111,6 +137,15 @@ export default function PostViewPage() {
         <p className="text-gray-600">
           Review your generated content and take action
         </p>
+        {post.status === "scheduled" && post.scheduleTime && (
+          <div className="mt-2 flex items-center text-blue-600">
+            <Clock className="w-4 h-4 mr-2" />
+            <span className="text-sm font-medium">
+              Scheduled for{" "}
+              {formatRelativeTime(post.scheduleTime, userTimezone)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -124,6 +159,8 @@ export default function PostViewPage() {
             onEditPost={handleEditPost}
             onRegenerate={handleRegenerate}
             postStatus={post.status}
+            postId={post.id}
+            isScheduled={isScheduled}
           />
         </div>
       </div>

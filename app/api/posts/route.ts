@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/app/db";
-import { posts } from "@/app/db/schema";
+import { posts, scheduledPosts } from "@/app/db/schema";
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { eq, desc } from "drizzle-orm";
@@ -56,10 +56,22 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Get all posts for the user
+    // Get all posts for the user with schedule information
     const userPosts = await db
-      .select()
+      .select({
+        id: posts.id,
+        content: posts.content,
+        writtenTone: posts.writtenTone,
+        associatedAccount: posts.associatedAccount,
+        status: posts.status,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+        publishedAt: posts.publishedAt,
+        scheduleTime: scheduledPosts.scheduleTime,
+        isPublished: scheduledPosts.isPublished,
+      })
       .from(posts)
+      .leftJoin(scheduledPosts, eq(posts.id, scheduledPosts.postId))
       .where(eq(posts.userId, userId))
       .orderBy(desc(posts.createdAt));
 

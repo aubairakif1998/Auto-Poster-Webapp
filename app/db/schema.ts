@@ -81,3 +81,16 @@ export const scheduledPosts = pgTable("scheduled_posts", {
     () => new Date()
   ),
 });
+
+export const userPreferences = pgTable("user_preferences", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .unique(),
+  preferredPostingTime: text("preferred_posting_time").default("9am"),
+  contentTone: text("content_tone").default("professional"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
+    () => new Date()
+  ),
+});

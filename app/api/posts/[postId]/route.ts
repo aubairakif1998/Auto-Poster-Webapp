@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/app/db";
-import { posts } from "@/app/db/schema";
+import { posts, scheduledPosts } from "@/app/db/schema";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -76,16 +76,26 @@ export async function GET(
     const params = await context.params;
     const { postId } = params;
 
-    // Get the specific post
+    // Get the post with schedule information
     const post = await db
-      .select()
+      .select({
+        id: posts.id,
+        content: posts.content,
+        writtenTone: posts.writtenTone,
+        associatedAccount: posts.associatedAccount,
+        status: posts.status,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+        publishedAt: posts.publishedAt,
+        scheduleTime: scheduledPosts.scheduleTime,
+        isPublished: scheduledPosts.isPublished,
+      })
       .from(posts)
+      .leftJoin(scheduledPosts, eq(posts.id, scheduledPosts.postId))
       .where(and(eq(posts.id, postId), eq(posts.userId, userId)));
 
     if (!post.length) {
-      return new NextResponse("Post not found or unauthorized", {
-        status: 404,
-      });
+      return new NextResponse("Post not found", { status: 404 });
     }
 
     return NextResponse.json({

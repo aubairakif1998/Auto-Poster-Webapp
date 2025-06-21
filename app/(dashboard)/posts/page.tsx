@@ -8,6 +8,7 @@ import {
   Share,
   Eye,
   RefreshCw,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  formatRelativeTime,
+  getTimeRemaining,
+  getUserTimezone,
+} from "@/app/lib/timezone";
 
 interface Post {
   id: string;
@@ -25,6 +31,9 @@ interface Post {
   status: "draft" | "scheduled" | "published";
   createdAt: string;
   updatedAt: string;
+  publishedAt?: string | null;
+  scheduleTime?: string | null;
+  isPublished?: boolean | null;
 }
 
 interface PostsByStatus {
@@ -37,6 +46,7 @@ export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userTimezone] = useState(() => getUserTimezone());
   const router = useRouter();
 
   useEffect(() => {
@@ -85,6 +95,18 @@ export default function PostsPage() {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    });
+  };
+
+  const formatPublishedDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
@@ -188,8 +210,36 @@ export default function PostsPage() {
                         {truncateContent(post.content)}
                       </p>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>{formatDate(post.createdAt)}</span>
+                        <span>
+                          {post.publishedAt
+                            ? `Published on ${formatPublishedDate(
+                                post.publishedAt
+                              )}`
+                            : formatDate(post.createdAt)}
+                        </span>
                         {getStatusBadge(post.status)}
+                        {post.status === "scheduled" && post.scheduleTime && (
+                          <span className="flex items-center text-blue-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {formatRelativeTime(
+                              post.scheduleTime,
+                              userTimezone
+                            )}
+                            {getTimeRemaining(
+                              post.scheduleTime,
+                              userTimezone
+                            ) && (
+                              <span className="ml-2 text-orange-600 text-xs">
+                                (
+                                {getTimeRemaining(
+                                  post.scheduleTime,
+                                  userTimezone
+                                )}
+                                )
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -200,20 +250,24 @@ export default function PostsPage() {
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditPost(post.id)}
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRegenerate(post.id)}
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
+                      {post.status !== "published" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPost(post.id)}
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRegenerate(post.id)}
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -254,7 +308,13 @@ export default function PostsPage() {
                         {truncateContent(post.content)}
                       </p>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>{formatDate(post.createdAt)}</span>
+                        <span>
+                          {post.publishedAt
+                            ? `Published on ${formatPublishedDate(
+                                post.publishedAt
+                              )}`
+                            : formatDate(post.createdAt)}
+                        </span>
                         {getStatusBadge(post.status)}
                       </div>
                     </div>
@@ -265,13 +325,6 @@ export default function PostsPage() {
                         onClick={() => handleViewPost(post.id)}
                       >
                         <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditPost(post.id)}
-                      >
-                        <Edit3 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
