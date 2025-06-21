@@ -30,16 +30,16 @@ export default function PostViewPage() {
   const [userTimezone] = useState(() => getUserTimezone());
   const postId = params.postId as string;
 
-  const formatPublishedDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  // const formatPublishedDate = (date: Date) => {
+  //   return date.toLocaleDateString("en-US", {
+  //     year: "numeric",
+  //     month: "short",
+  //     day: "numeric",
+  //     hour: "numeric",
+  //     minute: "2-digit",
+  //     hour12: true,
+  //   });
+  // };
 
   useEffect(() => {
     if (postId) {
