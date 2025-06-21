@@ -57,6 +57,7 @@ export class AIService {
       if (
         !data?.post?.hook ||
         !data?.post?.content ||
+        !data?.post?.hashtags ||
         !data?.post?.call_to_action
       ) {
         throw new Error("Invalid response format from AI API");

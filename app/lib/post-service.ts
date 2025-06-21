@@ -22,6 +22,7 @@ export interface AIResponse {
   post: {
     hook: string;
     content: string;
+    hashtags: string[];
     call_to_action: string;
   };
 }

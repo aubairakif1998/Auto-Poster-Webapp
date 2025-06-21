@@ -27,7 +27,11 @@ const getDomainFromUrl = (url: string): string => {
 // Function to extract hashtags from content
 const extractHashtags = (content: string): string[] => {
   const hashtagRegex = /#\w+/g;
-  return content.match(hashtagRegex) || [];
+  const hashtags = content.match(hashtagRegex) || [];
+
+  // Remove duplicates and limit to reasonable number
+  const uniqueHashtags = [...new Set(hashtags)];
+  return uniqueHashtags.slice(0, 10);
 };
 
 // Function to format content with link previews
@@ -143,6 +147,10 @@ export function PostPreview({ content }: PostPreviewProps) {
 
   // Extract hashtags from the content
   const hashtags = extractHashtags(content);
+
+  // Debug: log the content and extracted hashtags
+  console.log("PostPreview - Content:", content);
+  console.log("PostPreview - Extracted hashtags:", hashtags);
 
   return (
     <div className="space-y-6">

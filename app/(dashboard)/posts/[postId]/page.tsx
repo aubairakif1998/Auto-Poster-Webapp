@@ -117,8 +117,7 @@ export default function PostViewPage() {
         <div>
           <PostPreview content={post.content} />
         </div>
-
-        <div>
+        <div className="mt-7">
           <PostActions
             onPostNow={handlePostNow}
             onSchedulePost={handleSchedulePost}

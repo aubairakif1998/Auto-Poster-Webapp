@@ -4,6 +4,7 @@ interface GeneratedPostData {
   post: {
     hook: string;
     content: string;
+    hashtags: string[];
     call_to_action: string;
   };
 }
@@ -54,13 +55,29 @@ export function formatGeneratedContent(data: GeneratedPostData): string {
     throw new Error("Invalid response: missing post data");
   }
 
-  const { hook, content, call_to_action } = data.post;
+  const { hook, content, hashtags, call_to_action } = data.post;
 
   if (!hook || !content || !call_to_action) {
     throw new Error("Invalid response: missing required post fields");
   }
 
-  return `${hook}\n\n${content}\n\n${call_to_action}`;
+  // Debug: log the hashtags being processed
+  console.log("formatGeneratedContent - Original hashtags:", hashtags);
+
+  // Merge hashtags into the content with proper # formatting
+  const hashtagsText =
+    hashtags && hashtags.length > 0
+      ? `\n\n${hashtags
+          .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`))
+          .join(" ")}`
+      : "";
+
+  const finalContent = `${hook}\n\n${content}${hashtagsText}\n\n${call_to_action}`;
+
+  // Debug: log the final formatted content
+  console.log("formatGeneratedContent - Final content:", finalContent);
+
+  return finalContent;
 }
 
 export function validateGenerationInput(topic: string): boolean {
